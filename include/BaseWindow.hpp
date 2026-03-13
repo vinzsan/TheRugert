@@ -37,7 +37,10 @@ protected:
     Camera3D camera{};
     float default_fovy = 45.0f;
     Vector3 box = {5.0,5.0,5.0};
+    Color box_color = RED;
     Vector2 floor{50.0,50.0};
+
+    int width,height = 0;
 public:
     MainWindow(YougurtSharedMetadata &shared_ref) noexcept : YougurtBaseWindowScene(shared_ref)
     {
@@ -59,11 +62,13 @@ public:
         if (!shared.mode3dstate.windowPause)
         {
             BeginMode3D(camera);
-            DrawPlane((Vector3) {0.0,0.0,0.0},floor,DARKBROWN);
+            DrawPlane((Vector3) {0.0,-1.0f,0.0},floor,DARKBROWN);
             DrawGrid(50,0.5f);
-            DrawCube((Vector3){0.0f,1.0f,0.0f},10,10,10,RED);
+            DrawCube((Vector3){0.0f,5.0f,0.0f},5,5,5,this->box_color);
+
             EndMode3D();
         }
+        DrawText("+",width / 2,height / 2,20,BLACK);
     }
     void EventPoll() override
     {
@@ -83,17 +88,33 @@ public:
             shared.mousHiddenFlags = true;
         }
 
-        if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_LEFT))
+        if (IsKeyDown(KeyboardKey::KEY_Z))
         {
             if (camera.fovy > 1.0f)
                 camera.fovy -= 0.5f;
         }
-
-        if (IsMouseButtonDown(MouseButton::MOUSE_BUTTON_RIGHT))
+        if (IsKeyPressed(KeyboardKey::KEY_R))
         {
-            if (camera.fovy < default_fovy)
-                camera.fovy += 0.5f;
+            camera.fovy = default_fovy;
         }
+
+        if (IsMouseButtonPressed(MouseButton::MOUSE_BUTTON_LEFT))
+        {
+            Ray ray = GetMouseRay((Vector2){this->width / 2.0f,this->height / 2.0f},camera);
+
+            RayCollision hit = GetRayCollisionBox(ray,(BoundingBox){
+                { -2.5f,2.5f,-2.5f},
+                {2.5f,7.5f,2.5f}
+            });
+
+            if (hit.hit && hit.distance <= (float)5.0f)
+            {
+                this->box_color = WHITE;
+            }
+        }
+
+        width = GetScreenWidth();
+        height = GetScreenHeight();
     }
     void UpdateState() override
     {
